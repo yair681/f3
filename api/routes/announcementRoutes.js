@@ -5,14 +5,14 @@ const router = express.Router();
 const path = require('path');
 
 // ==================================================================
-// תיקון נתיבים אבסולוטי (מונע את שגיאת Cannot find module)
+// הגדרת נתיבים למודלים ול-Middleware
+// אנו משתמשים ב-AnnouncementModel (השם החדש)
 // ==================================================================
 
-// מגדיר את התיקייה הראשית של הפרויקט
 const rootDir = process.cwd();
 
-// טעינת המודלים וה-middleware באמצעות נתיב מלא ובטוח
-const Announcement = require(path.join(rootDir, 'models', 'Announcement'));
+// שים לב: כאן אנחנו קוראים לקובץ בשם החדש שלו!
+const Announcement = require(path.join(rootDir, 'models', 'AnnouncementModel'));
 const Class = require(path.join(rootDir, 'models', 'Class'));
 const { protect } = require(path.join(rootDir, 'api', 'middleware', 'auth'));
 
@@ -20,15 +20,14 @@ const { protect } = require(path.join(rootDir, 'api', 'middleware', 'auth'));
 // נתיבים (Routes)
 // ==================================================================
 
-// 1. GET /api/announcements/main - קבלת הודעות ראשיות (לכולם)
-// לא דורש protect כדי שיוצג בדף הבית, או דורש אם רוצים
+// 1. GET /api/announcements/main
+// קבלת הודעות ראשיות (לכל המשתמשים) - הודעות שאין להן classId
 router.get('/main', async (req, res) => {
     try {
-        // שליפת הודעות שאין להן classId (כלומר הודעות ראשיות)
         const announcements = await Announcement.find({ classId: null })
-            .populate('postedBy', 'name') // מביא את שם המפרסם
-            .sort({ date: -1 }) // מהחדש לישן
-            .limit(10); // מגביל ל-10 אחרונות
+            .populate('postedBy', 'name') // מביא את שם המפרסם מהמודל של User
+            .sort({ date: -1 }) // מיון מהחדש לישן
+            .limit(20); // מגביל ל-20 הודעות אחרונות
 
         res.json(announcements);
     } catch (err) {
@@ -37,9 +36,10 @@ router.get('/main', async (req, res) => {
     }
 });
 
-// 2. POST /api/announcements - פרסום הודעה חדשה (מורה/מנהל)
+// 2. POST /api/announcements
+// פרסום הודעה חדשה (מורה או מנהל בלבד)
 router.post('/', protect, async (req, res) => {
-    // וידוא הרשאות: רק מורה או מנהל יכולים לפרסם
+    // וידוא הרשאות
     if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
         return res.status(403).json({ message: 'אין הרשאה לפרסם הודעות.' });
     }
@@ -47,7 +47,7 @@ router.post('/', protect, async (req, res) => {
     const { title, content, classId } = req.body;
 
     try {
-        // בדיקה: אם נבחרה כיתה ספציפית, נודא שהיא קיימת
+        // אם נבחרה כיתה (וזה לא 'main'), נבדוק שהיא קיימת
         if (classId && classId !== 'main') {
             const targetClass = await Class.findById(classId);
             if (!targetClass) {
@@ -59,7 +59,7 @@ router.post('/', protect, async (req, res) => {
         const newAnnouncement = new Announcement({
             title,
             content,
-            // אם זה 'main' או ריק, נשמור כ-null. אחרת, נשמור את ה-ID של הכיתה
+            // אם ה-classId הוא 'main' או ריק, נשמור כ-null. אחרת נשמור את ה-ID האמיתי.
             classId: (classId === 'main' || !classId) ? null : classId,
             postedBy: req.user._id
         });
@@ -73,7 +73,8 @@ router.post('/', protect, async (req, res) => {
     }
 });
 
-// 3. GET /api/announcements/class/:classId - הודעות לכיתה ספציפית
+// 3. GET /api/announcements/class/:classId
+// קבלת הודעות לכיתה ספציפית (עבור תלמידים/מורים בכיתה)
 router.get('/class/:classId', protect, async (req, res) => {
     try {
         const announcements = await Announcement.find({ classId: req.params.classId })
@@ -82,6 +83,7 @@ router.get('/class/:classId', protect, async (req, res) => {
 
         res.json(announcements);
     } catch (err) {
+        console.error("Error loading class announcements:", err);
         res.status(500).json({ message: 'שגיאה בטעינת הודעות כיתה.' });
     }
 });
