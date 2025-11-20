@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אתר בית הספר</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>ברוכים הבאים לאתר בית הספר</h1>
+        <button id="loginButton">התחברות למערכת</button>
+    </header>
+
+    <main>
+        <h2>📢 הודעות ראשיות</h2>
+        <div id="mainAnnouncements">
+            <p>טוען הודעות...</p>
+        </div>
+
+        <section id="loginFormSection" style="display:none;">
+            <h3>התחברות</h3>
+            <form id="loginForm">
+                <input type="email" id="email" placeholder="אימייל" required>
+                <input type="password" id="password" placeholder="סיסמה" required>
+                <button type="submit">התחבר</button>
+                <p id="loginMessage" style="color:red;"></p>
+            </form>
+        </section>
+    </main>
+    <script src="scripts.js"></script>
+</body>
+</html>
