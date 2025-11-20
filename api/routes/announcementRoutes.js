@@ -2,17 +2,18 @@
 
 const express = require('express');
 const router = express.Router();
-// אין צורך ב-path כשאנחנו יודעים את המבנה המדויק
-// המבנה: api/routes --> models (פעמיים אחורה)
+
+// הנתיב היחסי: ../.. יוצא מ-api/routes/ אל root/
+// ואז נכנס ל-models/ (שם הקובץ החדש: AnnouncementModel.js)
 const Announcement = require('../../models/AnnouncementModel');
 const Class = require('../../models/Class');
 const { protect } = require('../middleware/auth'); 
 
 // ==================================================================
-// הנתיבים נשארים זהים לקוד הקודם:
+// נתיבים (Routes)
 // ==================================================================
 
-// 1. GET /api/announcements/main
+// 1. GET /api/announcements/main (הנתיב שהחזיר 404)
 router.get('/main', async (req, res) => {
     try {
         const announcements = await Announcement.find({ classId: null })
@@ -21,6 +22,7 @@ router.get('/main', async (req, res) => {
             .limit(20); 
         res.json(announcements);
     } catch (err) {
+        // אם זה נכשל, זה בגלל populate או DB.
         console.error("Error loading main announcements:", err);
         res.status(500).json({ message: 'שגיאה בטעינת הודעות.' });
     }
