@@ -2,50 +2,87 @@
 
 const express = require('express');
 const router = express.Router();
-const Announcement = require('../../models/Announcement'); // הנח את הנתיב הנכון למודל
-const auth = require('../../middleware/auth'); // Middleware לאימות JWT והרשאות
+const path = require('path');
 
-// ------------------------------------------------------------------
-// GET /api/announcements/main - שליפת הודעות ראשיות (כלליות)
-// ------------------------------------------------------------------
-router.get('/main', auth, async (req, res) => {
+// ==================================================================
+// תיקון נתיבים אבסולוטי (מונע את שגיאת Cannot find module)
+// ==================================================================
+
+// מגדיר את התיקייה הראשית של הפרויקט
+const rootDir = process.cwd();
+
+// טעינת המודלים וה-middleware באמצעות נתיב מלא ובטוח
+const Announcement = require(path.join(rootDir, 'models', 'Announcement'));
+const Class = require(path.join(rootDir, 'models', 'Class'));
+const { protect } = require(path.join(rootDir, 'api', 'middleware', 'auth'));
+
+// ==================================================================
+// נתיבים (Routes)
+// ==================================================================
+
+// 1. GET /api/announcements/main - קבלת הודעות ראשיות (לכולם)
+// לא דורש protect כדי שיוצג בדף הבית, או דורש אם רוצים
+router.get('/main', async (req, res) => {
     try {
-        // שליפת כל ההודעות שבהן classId הוא null (הודעות כלליות)
+        // שליפת הודעות שאין להן classId (כלומר הודעות ראשיות)
         const announcements = await Announcement.find({ classId: null })
-            .sort({ date: -1 })
-            .limit(10); // מגביל ל-10 הודעות אחרונות
+            .populate('postedBy', 'name') // מביא את שם המפרסם
+            .sort({ date: -1 }) // מהחדש לישן
+            .limit(10); // מגביל ל-10 אחרונות
 
         res.json(announcements);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'שגיאה בטעינת הודעות ראשיות.' });
+        console.error("Error loading main announcements:", err);
+        res.status(500).json({ message: 'שגיאת שרת בטעינת הודעות.' });
     }
 });
 
-// ------------------------------------------------------------------
-// POST /api/announcements - יצירת הודעה חדשה (Teacher/Admin)
-// ------------------------------------------------------------------
-router.post('/', auth, async (req, res) => {
-    // ודא שהמשתמש הוא מורה או מנהל
+// 2. POST /api/announcements - פרסום הודעה חדשה (מורה/מנהל)
+router.post('/', protect, async (req, res) => {
+    // וידוא הרשאות: רק מורה או מנהל יכולים לפרסם
     if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
         return res.status(403).json({ message: 'אין הרשאה לפרסם הודעות.' });
     }
 
-    const { title, content, classId } = req.body; // classId יכול להיות null להודעה כללית
+    const { title, content, classId } = req.body;
 
     try {
-        const announcement = new Announcement({
+        // בדיקה: אם נבחרה כיתה ספציפית, נודא שהיא קיימת
+        if (classId && classId !== 'main') {
+            const targetClass = await Class.findById(classId);
+            if (!targetClass) {
+                return res.status(404).json({ message: 'הכיתה לא נמצאה.' });
+            }
+        }
+
+        // יצירת ההודעה
+        const newAnnouncement = new Announcement({
             title,
             content,
-            classId: classId || null, // אם classId לא נשלח, זה null (הודעה כללית)
+            // אם זה 'main' או ריק, נשמור כ-null. אחרת, נשמור את ה-ID של הכיתה
+            classId: (classId === 'main' || !classId) ? null : classId,
             postedBy: req.user._id
         });
 
-        await announcement.save();
-        res.status(201).json({ message: 'ההודעה פורסמה בהצלחה.', announcement });
+        await newAnnouncement.save();
+        res.status(201).json({ message: 'ההודעה פורסמה בהצלחה!', announcement: newAnnouncement });
+
     } catch (err) {
-        console.error(err);
-        res.status(400).json({ message: 'שגיאה בפרסום הודעה.', error: err.message });
+        console.error("Error posting announcement:", err);
+        res.status(500).json({ message: 'שגיאה בפרסום ההודעה.' });
+    }
+});
+
+// 3. GET /api/announcements/class/:classId - הודעות לכיתה ספציפית
+router.get('/class/:classId', protect, async (req, res) => {
+    try {
+        const announcements = await Announcement.find({ classId: req.params.classId })
+            .populate('postedBy', 'name')
+            .sort({ date: -1 });
+
+        res.json(announcements);
+    } catch (err) {
+        res.status(500).json({ message: 'שגיאה בטעינת הודעות כיתה.' });
     }
 });
 
