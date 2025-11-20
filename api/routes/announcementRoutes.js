@@ -3,8 +3,8 @@
 const express = require('express');
 const router = express.Router();
 
-// הנתיב היחסי: ../.. יוצא מ-api/routes/ אל root/
-// ואז נכנס ל-models/ (שם הקובץ החדש: AnnouncementModel.js)
+// נתיב יחסי נכון: עולים מ- api/routes פעמיים אחורה (../..)
+// ואז נכנסים לתיקיית models/ (שנמצאת בשורש הפרויקט)
 const Announcement = require('../../models/AnnouncementModel');
 const Class = require('../../models/Class');
 const { protect } = require('../middleware/auth'); 
@@ -13,7 +13,8 @@ const { protect } = require('../middleware/auth');
 // נתיבים (Routes)
 // ==================================================================
 
-// 1. GET /api/announcements/main (הנתיב שהחזיר 404)
+// 1. GET /api/announcements/main
+// קבלת הודעות ראשיות (classId: null)
 router.get('/main', async (req, res) => {
     try {
         const announcements = await Announcement.find({ classId: null })
@@ -22,13 +23,14 @@ router.get('/main', async (req, res) => {
             .limit(20); 
         res.json(announcements);
     } catch (err) {
-        // אם זה נכשל, זה בגלל populate או DB.
+        // שגיאה בטעינת הודעות תופיע בלוגים אם יש בעיה ב-populate או ב-DB
         console.error("Error loading main announcements:", err);
         res.status(500).json({ message: 'שגיאה בטעינת הודעות.' });
     }
 });
 
 // 2. POST /api/announcements
+// פרסום הודעה חדשה (מורה או מנהל)
 router.post('/', protect, async (req, res) => {
     if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
         return res.status(403).json({ message: 'אין הרשאה לפרסם הודעות.' });
@@ -54,6 +56,7 @@ router.post('/', protect, async (req, res) => {
 });
 
 // 3. GET /api/announcements/class/:classId
+// קבלת הודעות ספציפיות לכיתה
 router.get('/class/:classId', protect, async (req, res) => {
     try {
         const announcements = await Announcement.find({ classId: req.params.classId })
