@@ -3,58 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>לוח הבקרה - בית הספר</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>לוח בקרה</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
     <header>
-        <h1 id="welcomeMessage">טוען...</h1>
-        <button id="logoutButton">התנתקות</button>
+        <h1>לוח בקרה</h1>
+        <p id="welcomeMessage"></p>
+        <button id="logoutBtn">התנתק</button>
     </header>
 
     <main>
         
-        <section id="adminPanel" style="display:none;">
-            <h2>🔑 ניהול משתמשים (Admin)</h2>
-            <p>כאן תוכל לנהל משתמשים (כולל יצירה, עריכה ומחיקה).</p>
+        <section id="studentPanel">
+            <h2>🔔 עדכונים והודעות</h2>
+            <div id="announcementsList">
+                <p>טוען הודעות ראשיות...</p>
+            </div>
+
+            <h2>📚 הכיתות שלי</h2>
+            <div id="studentClassesList">
+                <p>טוען כיתות...</p>
+            </div>
+            
+            <hr>
+
+            <h2>📝 משימות להגשה</h2>
+            <div id="assignmentsList">
+                <p>טוען משימות...</p>
+            </div>
         </section>
+
+        <hr>
 
         <section id="teacherPanel" style="display:none;">
-            <h2>📚 ניהול כיתות ומשימות (מורה/מנהל)</h2>
+            <h2>🛠️ ניהול כיתות ופרסום (Teacher)</h2>
+
+            <h3>יצירת כיתה חדשה</h3>
             <form id="createClassForm">
-                <input type="text" id="className" placeholder="שם כיתה חדשה" required>
+                <input type="text" id="className" placeholder="שם הכיתה (לדוגמה: י1 מדעים)" required>
                 <button type="submit">צור כיתה</button>
-                <p id="classMessage" style="color:red;"></p>
+                <p id="createClassMessage"></p>
             </form>
             
-            <h3>פרסום הודעה ראשית</h3>
-             <form id="postMainAnnouncementForm">
-                <input type="text" id="announcementTitle" placeholder="כותרת ההודעה" required>
-                <textarea id="announcementContent" placeholder="תוכן ההודעה..." required></textarea>
-                <button type="submit">פרסם הודעה ראשית</button>
+            <hr>
+
+            <h3>פרסום הודעה</h3>
+            <form id="createAnnouncementForm">
+                <input type="text" id="announcementTitle" placeholder="כותרת" required>
+                <textarea id="announcementContent" placeholder="תוכן ההודעה" required></textarea>
+                <select id="announcementClassId">
+                    <option value="main">הודעה ראשית (לכל המשתמשים)</option>
+                    </select>
+                <button type="submit">פרסם הודעה</button>
                 <p id="announcementMessage"></p>
             </form>
-        </section>
 
-        <section id="studentPanel" style="display:none;">
-            <h2>📖 המשימות שלי (תלמיד)</h2>
-            <div id="studentTasksList">טוען משימות...</div>
+            <hr>
+
+            <h3>👥 ניהול רישום תלמידים לכיתה</h3>
+            <label for="classSelect">בחר כיתה לניהול:</label>
+            <select id="classSelect"></select>
+
+            <div id="enrollmentManagement" style="display: none; border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
+                
+                <div style="display: flex; gap: 20px;">
+                    
+                    <div style="flex: 1;">
+                        <h4>הוספת תלמיד חדש</h4>
+                        <select id="studentsToAddSelect" style="width: 100%; margin-bottom: 10px;">
+                            </select>
+                        <button id="addStudentBtn" disabled style="width: 100%;">הוסף לכיתה</button>
+                        <p id="addStudentMessage" style="text-align: center;"></p>
+                    </div>
+
+                    <div style="flex: 1;">
+                        <h4>תלמידים רשומים כעת (<span id="enrolledCount">0</span>)</h4>
+                        <div id="enrolledStudentsList" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; padding: 5px;">
+                            </div>
+                    </div>
+                    
+                </div>
+            </div>
+
+            <hr>
+            
+            <h3>רשימת הכיתות שלי</h3>
+            <div id="teacherClassesList">
+                <p>טוען כיתות...</p>
+            </div>
+
         </section>
         
-        <section>
-            <h2>⚙️ הגדרות משתמש</h2>
-            <h3>שינוי סיסמה</h3>
-            <form id="changePasswordForm">
-                <input type="password" id="oldPassword" placeholder="סיסמה ישנה" required>
-                <input type="password" id="newPassword" placeholder="סיסמה חדשה" required>
-                <button type="submit">שנה סיסמה</button>
-                <p id="passwordMessage"></p>
+        <hr>
+
+        <section id="adminPanel" style="display:none;">
+            <h2>🔑 ניהול משתמשים (Admin)</h2>
+            
+            <h3>יצירת משתמש חדש</h3>
+            <form id="createUserForm">
+                <input type="text" id="newUserName" placeholder="שם מלא" required>
+                <input type="email" id="newUserEmail" placeholder="אימייל" required>
+                <input type="password" id="newUserPassword" placeholder="סיסמה זמנית" required>
+                <select id="newUserRole" required>
+                    <option value="student">תלמיד</option>
+                    <option value="teacher">מורה</option>
+                </select>
+                <button type="submit">צור משתמש</button>
+                <p id="createUserMessage"></p>
             </form>
             
-            <h3>הכיתות שלי:</h3>
-            <ul id="userClassesList">
-                <li>טוען כיתות...</li>
-            </ul>
+            <hr>
+            
+            <h3>רשימת משתמשים קיימים</h3>
+            <div id="usersListContainer">
+                <p>טוען רשימת משתמשים...</p>
+            </div>
         </section>
 
     </main>
