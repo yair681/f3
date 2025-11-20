@@ -1,67 +1,51 @@
 // api/routes/announcementRoutes.js
+
 const express = require('express');
-const { protect } = require('../middleware/auth');
-const { authorize, ROLES } = require('../middleware/roles');
-const Announcement = require('../models/Announcement');
-const Class = require('../models/Class');
 const router = express.Router();
+const Announcement = require('../../models/Announcement'); // הנח את הנתיב הנכון למודל
+const auth = require('../../middleware/auth'); // Middleware לאימות JWT והרשאות
 
-// 1. POST /api/announcements - פרסום הודעה (מורה/מנהל)
-router.post('/', protect, authorize([ROLES.Admin, ROLES.Teacher]), async (req, res) => {
-    const { title, content, type, classId } = req.body;
-    
+// ------------------------------------------------------------------
+// GET /api/announcements/main - שליפת הודעות ראשיות (כלליות)
+// ------------------------------------------------------------------
+router.get('/main', auth, async (req, res) => {
     try {
-        if (type === 'class') {
-            const classObj = await Class.findById(classId);
-            if (!classObj || (!classObj.teachers.includes(req.user._id) && req.user.role !== ROLES.Admin)) {
-                return res.status(403).json({ message: 'Forbidden: Must be a teacher/admin in this class to post.' });
-            }
-        }
+        // שליפת כל ההודעות שבהן classId הוא null (הודעות כלליות)
+        const announcements = await Announcement.find({ classId: null })
+            .sort({ date: -1 })
+            .limit(10); // מגביל ל-10 הודעות אחרונות
 
-        const newAnnouncement = new Announcement({
-            title, content, type, 
-            classId: type === 'class' ? classId : undefined,
-            authorId: req.user._id
+        res.json(announcements);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'שגיאה בטעינת הודעות ראשיות.' });
+    }
+});
+
+// ------------------------------------------------------------------
+// POST /api/announcements - יצירת הודעה חדשה (Teacher/Admin)
+// ------------------------------------------------------------------
+router.post('/', auth, async (req, res) => {
+    // ודא שהמשתמש הוא מורה או מנהל
+    if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'אין הרשאה לפרסם הודעות.' });
+    }
+
+    const { title, content, classId } = req.body; // classId יכול להיות null להודעה כללית
+
+    try {
+        const announcement = new Announcement({
+            title,
+            content,
+            classId: classId || null, // אם classId לא נשלח, זה null (הודעה כללית)
+            postedBy: req.user._id
         });
 
-        await newAnnouncement.save();
-        res.status(201).json({ message: 'Announcement published successfully', announcement: newAnnouncement });
-    } catch (error) {
-        res.status(500).json({ message: 'Server error while publishing announcement' });
-    }
-});
-
-// 2. GET /api/announcements/main - קבלת הודעות ראשיות (פומבי)
-router.get('/main', async (req, res) => {
-    try {
-        const announcements = await Announcement.find({ type: 'main' })
-                                                .populate('authorId', 'name')
-                                                .sort({ date: -1 }); 
-        res.json(announcements);
-    } catch (error) {
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-// 3. GET /api/announcements/class/:classId - קבלת הודעות כיתה (משתמש בכיתה)
-router.get('/class/:classId', protect, async (req, res) => {
-    try {
-        const classObj = await Class.findById(req.params.classId);
-        
-        // ודא שהמשתמש משויך לכיתה
-        const isMember = classObj && (classObj.students.includes(req.user._id) || classObj.teachers.includes(req.user._id) || req.user.role === ROLES.Admin);
-        
-        if (!isMember) {
-            return res.status(403).json({ message: 'Forbidden: Not a member of this class.' });
-        }
-
-        const announcements = await Announcement.find({ type: 'class', classId: req.params.classId })
-                                                .populate('authorId', 'name')
-                                                .sort({ date: -1 });
-
-        res.json(announcements);
-    } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        await announcement.save();
+        res.status(201).json({ message: 'ההודעה פורסמה בהצלחה.', announcement });
+    } catch (err) {
+        console.error(err);
+        res.status(400).json({ message: 'שגיאה בפרסום הודעה.', error: err.message });
     }
 });
 
