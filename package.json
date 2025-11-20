@@ -1,7 +1,7 @@
 {
-  "name": "school-platform",
+  "name": "school-platform-api",
   "version": "1.0.0",
-  "description": "School Management System with RBAC",
+  "description": "Backend and Frontend for a simple school management system",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -9,9 +9,12 @@
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
-    "dotenv": "^16.3.1",
+    "ejs": "^3.1.9",
     "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.0.3"
+    "express-session": "^1.18.0",
+    "mongoose": "^8.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
   }
 }
