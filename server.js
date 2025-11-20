@@ -23,16 +23,6 @@ if (fs.existsSync(modelsPath)) {
 } else {
     console.error("❌ ERROR: 'models' folder NOT found in root directory!");
 }
-
-const routesPath = path.join(process.cwd(), 'api', 'routes');
-if (fs.existsSync(routesPath)) {
-    console.log("✅ 'routes' folder found. Files inside:");
-    fs.readdirSync(routesPath).forEach(file => {
-        console.log(`   - ${file}`);
-    });
-} else {
-    console.error("❌ ERROR: 'api/routes' folder NOT found!");
-}
 console.log("--------------------------------------");
 // ==================================================================
 
@@ -45,27 +35,28 @@ mongoose.connect(process.env.MONGODB_URI)
 // 2. Middleware
 app.use(express.json()); // ניתוח JSON
 app.use(express.urlencoded({ extended: true })); // ניתוח טפסים
-app.use(express.static(path.join(__dirname, 'public'))); // הגשת קבצים סטטיים (פותר את בעיית ה-CSS)
+// קבצים סטטיים מוגשים מתיקיית public
+app.use(express.static(path.join(__dirname, 'public'))); 
 
 // 3. ייבוא נתיבים (Routes)
-// שימוש ב-path.join כדי למנוע טעויות נתיב בלינוקס/ווינדוס
+// שימוש בנתיבים יחסיים פשוטים (הנחת עבודה שהם בתוך api/routes)
 try {
-    const authRoutes = require(path.join(__dirname, 'api', 'routes', 'authRoutes'));
-    const userRoutes = require(path.join(__dirname, 'api', 'routes', 'userRoutes'));
-    const classRoutes = require(path.join(__dirname, 'api', 'routes', 'classRoutes'));
-    const announcementRoutes = require(path.join(__dirname, 'api', 'routes', 'announcementRoutes'));
-    // const assignmentRoutes = require(path.join(__dirname, 'api', 'routes', 'assignmentRoutes')); // בטל הערה כשיש קובץ
+    const authRoutes = require('./api/routes/authRoutes');
+    const userRoutes = require('./api/routes/userRoutes');
+    const classRoutes = require('./api/routes/classRoutes');
+    const announcementRoutes = require('./api/routes/announcementRoutes');
+    // const assignmentRoutes = require('./api/routes/assignmentRoutes'); // בטל הערה כשיש קובץ
 
     // 4. הגדרת נתיבי API
     app.use('/api/auth', authRoutes);
     app.use('/api/users', userRoutes);
     app.use('/api/classes', classRoutes);
-    app.use('/api/announcements', announcementRoutes);
+    app.use('/api/announcements', announcementRoutes); // נתיב הבסיס לבעיית ה-404!
     // app.use('/api/assignments', assignmentRoutes);
 
 } catch (error) {
     console.error("❌ CRITICAL ERROR: Failed to load routes.", error.message);
-    console.error("Please check the logs above to see which file is missing.");
+    console.error("נא בדוק את הלוגים למעלה לראות איזה קובץ חסר.");
 }
 
 // 5. נתיב ברירת מחדל (עבור Frontend)
