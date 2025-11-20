@@ -14,13 +14,11 @@ const announcementSchema = new mongoose.Schema({
         trim: true
     },
     classId: { 
-        // הפניה למודל Class. זה יהיה null עבור הודעות כלליות.
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Class', 
         default: null 
     }, 
     postedBy: { 
-        // הפניה למודל User.
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'User', 
         required: true
@@ -31,5 +29,4 @@ const announcementSchema = new mongoose.Schema({
     }
 });
 
-// ייצוא המודל תחת השם 'Announcement'
 module.exports = mongoose.model('Announcement', announcementSchema);
